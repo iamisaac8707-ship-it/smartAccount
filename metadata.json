@@ -1,0 +1,5 @@
+{
+  "name": "스마트 가계부 AI",
+  "description": "금융 내역을 추적하고, 소비 패턴을 시각화하며, Gemini를 통해 맞춤형 재무 조언을 받는 현대적인 AI 기반 가계부입니다.",
+  "requestFramePermissions": []
+}
