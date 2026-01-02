@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const http = require('http');
+const yahooFinance = require('yahoo-finance2').default; // Yahoo Finance Import
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -14,6 +15,65 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// ... (DB Connection Code) ...
+
+// API: Stock Search (Yahoo Finance)
+app.get('/api/stock/search', async (req, res) => {
+    const query = req.query.q;
+    if (!query) return res.status(400).json({ message: "검색어가 필요합니다." });
+
+    try {
+        let symbol = query;
+        
+        // 1. 단순 검색 (티커나 이름으로 검색)
+        // 한국 종목 코드(6자리 숫자)인 경우 .KS(코스피) 또는 .KQ(코스닥) 접미사 시도
+        if (/^\d{6}$/.test(query)) {
+            // 우선 코스피(.KS)로 가정하고 시도, 실패하면 코스닥(.KQ) 고려 (여기서는 단순화)
+            symbol = `${query}.KS`; 
+        } else {
+            const searchResult = await yahooFinance.search(query);
+            if (searchResult.quotes.length > 0) {
+                symbol = searchResult.quotes[0].symbol;
+            } else {
+                return res.status(404).json({ message: "종목을 찾을 수 없습니다." });
+            }
+        }
+
+        // 2. 시세 조회
+        const quote = await yahooFinance.quote(symbol);
+        
+        if (!quote) {
+             // 만약 .KS로 실패했다면 .KQ로 재시도 (숫자 6자리였던 경우만)
+             if (symbol.endsWith('.KS')) {
+                try {
+                    const kqSymbol = symbol.replace('.KS', '.KQ');
+                    const kqQuote = await yahooFinance.quote(kqSymbol);
+                    if (kqQuote) {
+                        return res.json({
+                            price: kqQuote.regularMarketPrice,
+                            currency: kqQuote.currency,
+                            name: kqQuote.longName || kqQuote.shortName,
+                            ticker: kqSymbol
+                        });
+                    }
+                } catch (e) {}
+             }
+             return res.status(404).json({ message: "시세 정보를 가져올 수 없습니다." });
+        }
+
+        res.json({
+            price: quote.regularMarketPrice,
+            currency: quote.currency,
+            name: quote.longName || quote.shortName,
+            ticker: symbol
+        });
+
+    } catch (err) {
+        console.error("Stock fetch error:", err);
+        res.status(500).json({ message: "시세 조회 중 오류 발생" });
+    }
+});
 
 // MongoDB 연결
 if (MONGODB_URI) {
