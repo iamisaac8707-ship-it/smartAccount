@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Asset, AssetType } from '../types';
-import { Wallet, Plus, Trash2, TrendingUp, Coins, Landmark, Home, Gem, CircleDollarSign, ArrowUpRight, ArrowDownRight, CreditCard, ChevronLeft, ChevronRight, Calendar, RefreshCw, Scroll, CarFront, X } from 'lucide-react';
+import { Wallet, Plus, Trash2, TrendingUp, Coins, Landmark, Home, Gem, CircleDollarSign, ArrowUpRight, ArrowDownRight, CreditCard, ChevronLeft, ChevronRight, Calendar, RefreshCw, Scroll, CarFront, X, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { fetchMarketPrice } from '../services/stockService';
 
@@ -216,13 +216,23 @@ const AssetView: React.FC<AssetViewProps> = ({ assets = [], onAdd, onUpdateValue
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !purchaseAmount || !initialValue) return;
+
+    // Capture quantity and unitPrice from inputs if available
+    const qtyInput = document.getElementById('input-quantity') as HTMLInputElement;
+    const quantity = qtyInput?.value ? Number(qtyInput.value) : undefined;
+    
+    // Calculate current unit price based on Total Current Value / Quantity
+    const calculatedUnitPrice = quantity ? Number(initialValue) / quantity : Number(initialValue);
+
     onAdd({
       name, type,
       purchaseAmount: Number(purchaseAmount),
       initialValue: Number(initialValue),
       currentValue: Number(initialValue),
       ticker: ticker || undefined,
-      date: todayStr
+      date: todayStr,
+      quantity: quantity,
+      unitPrice: calculatedUnitPrice
     });
     setName(''); setPurchaseAmount(''); setInitialValue(''); setTicker(''); setShowAddForm(false);
   };
@@ -347,10 +357,75 @@ const AssetView: React.FC<AssetViewProps> = ({ assets = [], onAdd, onUpdateValue
               <button onClick={() => setShowAddForm(false)} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"><X size={24}/></button>
             </div>
             <form onSubmit={handleAddSubmit} className="space-y-6">
+               {/* Search Section */}
+               <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100 space-y-3">
+                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">자동 검색 (주식/코인)</label>
+                 <div className="flex gap-2">
+                   <input 
+                    type="text" 
+                    value={ticker} 
+                    onChange={e => setTicker(e.target.value)} 
+                    placeholder="종목명 또는 티커 입력 (예: 삼성전자)"
+                    className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold focus:outline-none focus:border-indigo-500" 
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const btn = document.getElementById('search-btn');
+                        if (btn) btn.click();
+                      }
+                    }}
+                   />
+                   <button 
+                    type="button"
+                    id="search-btn"
+                    onClick={async () => {
+                      if (!ticker) return;
+                      setIsUpdatingPrices(true);
+                      try {
+                        const info = await fetchMarketPrice(ticker);
+                        if (info) {
+                          setName(info.name);
+                          setTicker(info.ticker);
+                          // Set current unit price (hidden state for calculation)
+                          const currentPrice = info.price;
+                          // If quantity is set, update current total value
+                          const qty = document.getElementById('input-quantity') as HTMLInputElement;
+                          const qVal = Number(qty?.value || 1);
+                          setInitialValue((currentPrice * qVal).toString());
+                          
+                          // Auto-fill unit price field if we had one, but here we just update the total current value directly
+                          // Let's store unit price in a data attribute or state if we want to be precise, 
+                          // but for now, we'll just set the total value and let user adjust quantity.
+                          
+                          // We can also set a default 'purchase price' to current price if empty
+                          if (!purchaseAmount) {
+                             const pInput = document.getElementById('input-purchase-price') as HTMLInputElement;
+                             if (pInput) pInput.value = currentPrice.toString();
+                             setPurchaseAmount((currentPrice * qVal).toString());
+                          }
+                          alert(`[${info.name}] 시세 정보를 가져왔습니다.\n현재가: ₩${info.price.toLocaleString()}`);
+                        } else {
+                          alert("정보를 찾을 수 없습니다.");
+                        }
+                      } catch(e) {
+                        alert("검색 중 오류가 발생했습니다.");
+                      } finally {
+                        setIsUpdatingPrices(false);
+                      }
+                    }}
+                    disabled={isUpdatingPrices}
+                    className="px-4 bg-indigo-600 text-white rounded-xl font-black text-xs shrink-0 flex items-center gap-2"
+                   >
+                     {isUpdatingPrices ? <RefreshCw className="animate-spin" size={14} /> : <Search size={14} />}
+                     검색
+                   </button>
+                 </div>
+               </div>
+
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">자산명</label>
-                    <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold" placeholder="예: 삼성전자, 현금" required />
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold" placeholder="예: 삼성전자" required />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">유형</label>
@@ -359,21 +434,67 @@ const AssetView: React.FC<AssetViewProps> = ({ assets = [], onAdd, onUpdateValue
                     </select>
                   </div>
                </div>
+
+               {/* Quantity & Unit Price Calculator */}
+               {(type === AssetType.STOCK || type === AssetType.CRYPTO) && (
+                 <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">수량 (주/개)</label>
+                      <input 
+                        id="input-quantity"
+                        type="number" 
+                        min="0"
+                        step="any"
+                        placeholder="0"
+                        className="w-full px-4 py-2 bg-white border border-indigo-200 rounded-xl font-black text-right text-indigo-900"
+                        onChange={(e) => {
+                          const q = Number(e.target.value);
+                          const pPrice = Number((document.getElementById('input-purchase-price') as HTMLInputElement)?.value || 0);
+                          const cPrice = Number((document.getElementById('input-current-price') as HTMLInputElement)?.value || 0); // Hidden or inferred?
+                          
+                          // We need to know 'unit price' to auto-calc. 
+                          // Let's deduce unit price from current Total / old Quantity if possible, or just rely on manual input.
+                          // Easier approach: Use this field to update Totals if Unit Prices are known.
+                          // Actually, let's keep it simple: User inputs Totals, OR User inputs Unit * Qty.
+                          // Let's add 'Unit Price' inputs.
+                          if(pPrice) setPurchaseAmount((pPrice * q).toString());
+                          
+                          // If we have a 'current unit price' stored in initialValue/q, it's complex.
+                          // Let's just recalculate Total Current Value if we have a valid unit price.
+                          // For now, let's just accept manual inputs for totals to avoid confusion, 
+                          // OR add explicit 'Unit Price' fields. Let's add explicit fields below.
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">평단가 (매수)</label>
+                       <input 
+                        id="input-purchase-price"
+                        type="number" 
+                        placeholder="0"
+                        className="w-full px-4 py-2 bg-white border border-indigo-200 rounded-xl font-black text-right text-indigo-900"
+                        onChange={(e) => {
+                          const price = Number(e.target.value);
+                          const qty = Number((document.getElementById('input-quantity') as HTMLInputElement)?.value || 0);
+                          if(qty) setPurchaseAmount((price * qty).toString());
+                        }}
+                       />
+                    </div>
+                 </div>
+               )}
+
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">티커/종목코드 (선택)</label>
-                    <input type="text" value={ticker} onChange={e => setTicker(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold" placeholder="005930, AAPL 등" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">매수/구매가</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">총 매수 금액 (원금)</label>
                     <input type="number" value={purchaseAmount} onChange={e => setPurchaseAmount(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold" required />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">총 평가 금액 (현재)</label>
+                    <input type="number" value={initialValue} onChange={e => setInitialValue(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold" required />
+                  </div>
                </div>
-               <div className="space-y-2">
-                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">현재 가치 (실제 자산가)</label>
-                 <input type="number" value={initialValue} onChange={e => setInitialValue(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-xl font-bold" required />
-               </div>
-               <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all">자산 데이터 저장</button>
+               
+               <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 active:scale-95 transition-all">자산 추가 완료</button>
             </form>
           </div>
         </div>
