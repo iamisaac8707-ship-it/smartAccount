@@ -196,9 +196,11 @@ const AssetView: React.FC<AssetViewProps> = ({ assets = [], onAdd, onUpdateValue
       for (const asset of tickerAssets) {
         const info = await fetchMarketPrice(asset.ticker!);
         if (info) {
+          // Fix: Multiply unit price by quantity to get total value
+          const quantity = asset.quantity || 1; 
           updates.push({
             id: asset.id,
-            newValue: info.price * (asset.quantity || 1),
+            newValue: info.price * quantity, 
             unitPrice: info.price
           });
         }
