@@ -84,11 +84,10 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd, onUpdate, edit
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[500] flex items-end justify-center px-0">
-          {/* 모달 본체: 상단 노치 여유 확보 및 둥근 모서리 조정 */}
-          <div className="bg-white w-full max-w-2xl rounded-t-[2.5rem] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-full duration-300 modal-height">
-            {/* 헤더 섹션: 패딩 최적화 */}
-            <div className="px-8 pt-8 pb-6 flex items-center justify-between sticky top-0 bg-white z-10 border-b border-slate-50">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] flex items-end justify-center px-0">
+          <div className="bg-white w-full max-w-2xl rounded-t-[2.5rem] shadow-2xl flex flex-col h-[90vh] overflow-hidden animate-in slide-in-from-bottom-full duration-300">
+            {/* Header */}
+            <div className="px-8 pt-8 pb-4 flex items-center justify-between flex-shrink-0 bg-white z-10 border-b border-slate-50">
               <div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">{editingTransaction ? '기록 수정' : '내역 추가'}</h2>
                 <div className="flex items-center gap-1.5 mt-1 text-indigo-600 font-bold text-xs uppercase tracking-tight">
@@ -100,8 +99,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd, onUpdate, edit
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide pb-20">
-              {/* 지출/수입 스위치: 크기 밸런스 */}
+            {/* Scrollable Form Content */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide pb-32">
               <div className="flex bg-slate-100 p-1.5 rounded-2xl">
                 <button
                   type="button"
@@ -119,7 +118,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd, onUpdate, edit
                 </button>
               </div>
 
-              {/* 금액 입력부: text-6xl -> text-4xl로 하향 조정 */}
               <div className="space-y-2">
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">금액 입력</label>
                 <div className="relative group">
@@ -135,7 +133,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd, onUpdate, edit
                 </div>
               </div>
 
-              {/* 카테고리: 2x5 그리드로 균형 잡기 */}
               <div className="space-y-3">
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">카테고리 선택</label>
                 <div className="grid grid-cols-2 gap-3">
@@ -159,7 +156,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd, onUpdate, edit
                 </div>
               </div>
 
-              {/* 날짜 선택 */}
               <div className="space-y-2">
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">날짜</label>
                 <button
@@ -206,8 +202,7 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd, onUpdate, edit
                 )}
               </div>
 
-              {/* 메모 입력 */}
-              <div className="space-y-2 pb-6">
+              <div className="space-y-2">
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest ml-1">내용 설명</label>
                 <input 
                   type="text" 
@@ -219,8 +214,8 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAdd, onUpdate, edit
               </div>
             </form>
 
-            {/* 하단 버튼: Safe Area 반영 패딩 */}
-            <div className="px-8 pt-4 pb-8 bg-white border-t border-slate-50">
+            {/* Fixed Bottom Button Area */}
+            <div className="flex-shrink-0 px-8 pt-4 pb-8 bg-white border-t border-slate-50 z-20 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
                 <button
                     type="submit"
                     onClick={handleSubmit}
