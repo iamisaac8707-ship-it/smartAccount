@@ -74,21 +74,6 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     window.location.reload();
   };
 
-  if (isAutoLogin) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-10 text-center">
-        <div className="relative mb-10">
-          <div className="w-24 h-24 border-8 border-slate-100 border-t-indigo-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Server size={32} className="text-indigo-600 animate-pulse" />
-          </div>
-        </div>
-        <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight italic uppercase">Connecting Node</h2>
-        <p className="text-lg font-bold text-slate-400">보안 서버에 접속 중입니다...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-['Pretendard']">
       <div className="max-w-md w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
