@@ -16,8 +16,14 @@ app.use(cors({
 
 app.use(express.json());
 
-// 정적 파일 서빙 (Vite build 결과물)
-app.use(express.static(path.join(__dirname, 'dist')));
+// API 서버 상태 확인
+app.get('/', (req, res) => {
+    res.status(200).json({ 
+        status: "ok", 
+        message: "Smart Account API Server is running", 
+        time: new Date().toISOString() 
+    });
+});
 
 // DB 관리
 const initDB = () => {
@@ -66,11 +72,6 @@ app.post('/api/data', (req, res) => {
     };
     saveToDB();
     res.json({ message: "저장 성공" });
-});
-
-// 모든 알 수 없는 요청에 대해 index.html 반환 (SPA 라우팅 지원)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // HTTP 서버 기동 (openssl 불필요)
