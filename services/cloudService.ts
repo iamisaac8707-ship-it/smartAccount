@@ -1,8 +1,8 @@
 
 import { Transaction, Asset, SpendingInsight, User } from "../types";
 
-// IP 주소 앞에 https:// 가 정확히 붙어있는지 확인하세요.
-const INTERNAL_GCP_SERVER_URL = "https://136.116.156.15:8000"; 
+// Vercel(프론트엔드)과 Render(백엔드)가 분리되어 있으므로 백엔드 절대 주소가 필요합니다.
+const INTERNAL_GCP_SERVER_URL = import.meta.env.VITE_API_URL || "https://smartaccount.onrender.com"; 
 
 export const CloudService = {
   getServerUrl: () => {

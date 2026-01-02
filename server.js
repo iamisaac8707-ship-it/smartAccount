@@ -16,15 +16,8 @@ app.use(cors({
 
 app.use(express.json());
 
-// 서버 상태 확인용 루트 경로
-app.get('/', (req, res) => {
-    res.send(`
-        <div style="font-family: sans-serif; text-align: center; padding: 50px; line-height: 1.6;">
-            <h1 style="color: #4f46e5; font-size: 40px;">✅ 서버 연결 성공!</h1>
-            <p style="font-size: 20px;">로컬 개발 모드 (HTTP)로 동작 중입니다.</p>
-        </div>
-    `);
-});
+// 정적 파일 서빙 (Vite build 결과물)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // DB 관리
 const initDB = () => {
@@ -73,6 +66,11 @@ app.post('/api/data', (req, res) => {
     };
     saveToDB();
     res.json({ message: "저장 성공" });
+});
+
+// 모든 알 수 없는 요청에 대해 index.html 반환 (SPA 라우팅 지원)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // HTTP 서버 기동 (openssl 불필요)
